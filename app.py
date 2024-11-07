@@ -6,10 +6,10 @@ import seaborn as sns
 import streamlit as st
 
 # Wczytanie danych
-countries_and_continents_path = r'C:\Users\Bartl\OneDrive - Collegium Da Vinci\Wizualizacja danych\common\countries_and_continents.csv'
-death_rate_path = r'C:\Users\Bartl\OneDrive - Collegium Da Vinci\Wizualizacja danych\death\death rate.xlsx'
-population_path = r'C:\Users\Bartl\OneDrive - Collegium Da Vinci\Wizualizacja danych\populacja\populacja.xlsx'
-birth_rate_path = r'C:\Users\Bartl\OneDrive - Collegium Da Vinci\Wizualizacja danych\urodzenia\Birth rate.xlsx'
+countries_and_continents_path = r'countries_and_continents.csv'
+death_rate_path = r'death rate.xlsx'
+population_path = r'populacja.xlsx'
+birth_rate_path = r'Birth rate.xlsx'
 
 # Wczytanie danych do Pandas DataFrames
 countries_and_continents = pd.read_csv(countries_and_continents_path)
