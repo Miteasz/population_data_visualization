@@ -29,37 +29,36 @@ def prepare_data():
     population_male['Year'] = population_male['Atrybut']
     birth_rate['Year'] = birth_rate['Atrybut']
 
-    # Łączenie danych o populacji mężczyzn i kobiet oraz dodanie 'Total'
-    population_total = population_female.copy()
-    population_total['Wartość'] = population_female['Wartość'] + population_male['Wartość']
-    population_total['Gender'] = 'Total'
+    # Dodanie kolumny Gender
     population_female['Gender'] = 'Female'
     population_male['Gender'] = 'Male'
 
-    # Połączenie wszystkich danych populacyjnych
-    population_with_continent = pd.concat([population_female, population_male, population_total]).reset_index(drop=True)
-    population_with_continent = population_with_continent.merge(countries_and_continents, 
-                                                                left_on='Country Name', 
-                                                                right_on='Country', 
-                                                                how='inner')
-    return population_with_continent
+    # Połączenie danych o populacji mężczyzn i kobiet
+    population_data = pd.concat([population_female, population_male]).reset_index(drop=True)
+    population_data = population_data.merge(countries_and_continents, 
+                                            left_on='Country Name', 
+                                            right_on='Country', 
+                                            how='inner')
+    # Tworzenie kolumny Continent_Gender dla kolorowania
+    population_data['Continent_Gender'] = population_data['Continent'] + '-' + population_data['Gender']
+    return population_data
 
 prepared_data = prepare_data()
 
 # Wizualizacje
 st.title("Wizualizacja danych demograficznych")
 
-# Wykres liniowy populacji dla każdego kontynentu - interaktywny
-st.subheader("Populacja dla każdego kontynentu w poszczególnych latach")
-
 # Wybór płci
-selected_gender = st.selectbox("Wybierz płeć", options=['Total', 'Female', 'Male'], index=0)
+selected_gender = st.selectbox("Wybierz płeć", options=['Wszystkie', 'Female', 'Male'], index=0)
 
-# Filtrowanie danych po płci
-gender_filtered_data = prepared_data[prepared_data['Gender'] == selected_gender]
+# Filtrowanie danych
+if selected_gender == 'Wszystkie':
+    gender_filtered_data = prepared_data
+else:
+    gender_filtered_data = prepared_data[prepared_data['Gender'] == selected_gender]
 
-# Filtruj tylko dane dla wybranego kontynentu
-continent_year_data = gender_filtered_data.groupby(['Continent', 'Year'])['Wartość'].sum().reset_index()
+# Grupowanie danych
+continent_year_data = gender_filtered_data.groupby(['Continent', 'Year', 'Gender', 'Continent_Gender'])['Wartość'].sum().reset_index()
 
 # Interaktywna wizualizacja za pomocą Altair
 selected_continents = st.multiselect("Wybierz kontynenty, aby zobaczyć szczegóły", 
@@ -76,12 +75,12 @@ filtered_data = continent_year_data[(continent_year_data['Continent'].isin(selec
                                     (continent_year_data['Year'] >= selected_year_range[0]) & 
                                     (continent_year_data['Year'] <= selected_year_range[1])]
 
-# Tworzenie wykresu liniowego
+# Tworzenie wykresu liniowego z kolorami dla kontynentu i płci
 line_chart = alt.Chart(filtered_data).mark_line(point=True).encode(
     x=alt.X('Year:O', title='Rok'),
     y=alt.Y('Wartość:Q', title='Populacja'),
-    color=alt.Color('Continent:N', title='Kontynent'),
-    tooltip=['Continent', 'Year', 'Wartość']
+    color=alt.Color('Continent_Gender:N', title='Kontynent i Płeć'),
+    tooltip=['Continent', 'Gender', 'Year', 'Wartość']
 ).properties(
     width=800,
     height=500,
@@ -93,24 +92,34 @@ if not filtered_data.empty:
 
 # Wykres słupkowy dla top 15 krajów
 st.subheader(f"Top 15 krajów dla wybranych kontynentów: {', '.join(selected_continents)}")
-top_countries_data = gender_filtered_data[(gender_filtered_data['Continent'].isin(selected_continents)) & 
-                                          (gender_filtered_data['Year'] >= selected_year_range[0]) & 
-                                          (gender_filtered_data['Year'] <= selected_year_range[1])]
 
-# Obliczenie średniej populacji dla każdego kraju
+# Filtrowanie danych dla wybranego okresu i kontynentów
+top_countries_data = prepare_data()
+top_countries_data = prepared_data[(prepared_data['Continent'].isin(selected_continents)) & 
+                                   (prepared_data['Year'] >= selected_year_range[0]) & 
+                                   (prepared_data['Year'] <= selected_year_range[1])]
+top_countries_data.to_csv('top_countries_data.csv')
+
+# Filtrowanie według wybranej płci
+if selected_gender != 'Wszystkie':
+    top_countries_data = top_countries_data[top_countries_data['Gender'] == selected_gender]
+    top_countries_data.to_csv('top_countries_data.csv')
+# Obliczenie średniej populacji dla każdego kraju w wybranym okresie
+top_countries_data = top_countries_data.groupby(['Country Name', 'Year'])['Wartość'].sum().reset_index()
 top_countries_data = top_countries_data.groupby('Country Name')['Wartość'].mean().reset_index()
 top_countries_data = top_countries_data.sort_values(by='Wartość', ascending=False).head(15)
 
 # Wykres słupkowy
 bar_chart = alt.Chart(top_countries_data).mark_bar().encode(
-    x=alt.X('Wartość:Q', title='Populacja', axis=alt.Axis(format=',.0f')),
+    x=alt.X('Wartość:Q', title='Średnia populacja', axis=alt.Axis(format=',.0f')),
     y=alt.Y('Country Name:N', sort='-x', title='Kraj'),
     tooltip=['Country Name', 'Wartość']
 ).properties(
     width=800,
     height=500,
-    title=f'Top 15 krajów w wybranych kontynentach: {", ".join(selected_continents)} (populacja) - {selected_gender}'
+    title=f'Top 15 krajów w wybranych kontynentach: {", ".join(selected_continents)} (średnia populacja) - {selected_gender}'
 )
 
 if not top_countries_data.empty:
     st.altair_chart(bar_chart)
+
