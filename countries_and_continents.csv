@@ -8,7 +8,7 @@ Antigua and Barbuda,North America
 Saudi Arabia,Asia
 Argentina,South America
 Armenia,Asia
-Australia,Oceania
+Australia,Australia and Oceania
 Austria,Europe
 Azerbaijan,Asia
 Bahamas,North America
@@ -46,7 +46,7 @@ Eritrea,Africa
 Estonia,Europe
 Eswatini,Africa
 Ethiopia,Africa
-Fiji,Oceania
+Fiji,Australia and Oceania
 Philippines,Asia
 Finland,Europe
 France,Europe
@@ -83,7 +83,7 @@ Qatar,Asia
 Kazakhstan,Asia
 Kenya,Africa
 Kyrgyzstan,Asia
-Kiribati,Oceania
+Kiribati,Australia and Oceania
 Colombia,South America
 Comoros,Africa
 Republic of the Congo,Africa
@@ -112,27 +112,27 @@ Morocco,Africa
 Mauritania,Africa
 Mauritius,Africa
 Mexico,North America
-Micronesia,Oceania
+Micronesia,Australia and Oceania
 Myanmar,Asia
 Moldova,Europe
 Monaco,Europe
 Mongolia,Asia
 Mozambique,Africa
 Namibia,Africa
-Nauru,Oceania
+Nauru,Australia and Oceania
 Nepal,Asia
 Germany,Europe
 Niger,Africa
 Nigeria,Africa
 Nicaragua,North America
 Norway,Europe
-New Zealand,Oceania
+New Zealand,Australia and Oceania
 Oman,Asia
 Pakistan,Asia
-Palau,Oceania
+Palau,Australia and Oceania
 Palestine,Asia
 Panama,North America
-Papua New Guinea,Oceania
+Papua New Guinea,Australia and Oceania
 Paraguay,South America
 Peru,South America
 Poland,Europe
@@ -146,7 +146,7 @@ Saint Kitts and Nevis,North America
 Saint Lucia,North America
 Saint Vincent and the Grenadines,North America
 El Salvador,North America
-Samoa,Oceania
+Samoa,Australia and Oceania
 San Marino,Europe
 Senegal,Africa
 Serbia,Europe
@@ -169,17 +169,17 @@ Thailand,Asia
 Tanzania,Africa
 East Timor,Asia
 Togo,Africa
-Tonga,Oceania
+Tonga,Australia and Oceania
 Trinidad and Tobago,North America
 Tunisia,Africa
 Turkey,Asia
 Turkmenistan,Asia
-Tuvalu,Oceania
+Tuvalu,Australia and Oceania
 Uganda,Africa
 Ukraine,Europe
 Uruguay,South America
 Uzbekistan,Asia
-Vanuatu,Oceania
+Vanuatu,Australia and Oceania
 Vatican City,Europe
 Venezuela,South America
 Hungary,Europe
@@ -187,8 +187,8 @@ United Kingdom,Europe
 Vietnam,Asia
 Italy,Europe
 Ivory Coast,Africa
-Marshall Islands,Oceania
-Solomon Islands,Oceania
+Marshall Islands,Australia and Oceania
+Solomon Islands,Australia and Oceania
 Sao Tome and Principe,Africa
 Zambia,Africa
 Zimbabwe,Africa
