@@ -2,6 +2,7 @@
 import pandas as pd
 import streamlit as st
 import altair as alt
+import openpyxl
 
 # Wczytanie danych
 countries_and_continents_path = 'countries_and_continents.csv'
