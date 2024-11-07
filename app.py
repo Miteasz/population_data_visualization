@@ -2,7 +2,6 @@
 import pandas as pd
 import streamlit as st
 import altair as alt
-import openpyxl
 
 # Wczytanie danych
 countries_and_continents_path = 'countries_and_continents.csv'
@@ -62,9 +61,11 @@ else:
 continent_year_data = gender_filtered_data.groupby(['Continent', 'Year', 'Gender', 'Continent_Gender'])['Wartość'].sum().reset_index()
 
 # Interaktywna wizualizacja za pomocą Altair
-selected_continents = st.multiselect("Wybierz kontynenty, aby zobaczyć szczegóły", 
-                                     options=list(continent_year_data['Continent'].unique()), 
-                                     default=list(continent_year_data['Continent'].unique()))
+selected_continents = st.multiselect(
+    "Wybierz kontynenty, aby zobaczyć szczegóły", 
+    options=list(continent_year_data['Continent'].unique()), 
+    default=['Europe']  # Ustawienie domyślnego wyboru na Europę
+)
 
 # Suwak do dynamicznej filtracji lat
 min_year = int(continent_year_data['Year'].min())
@@ -79,9 +80,14 @@ filtered_data = continent_year_data[(continent_year_data['Continent'].isin(selec
 # Tworzenie wykresu liniowego z kolorami dla kontynentu i płci
 line_chart = alt.Chart(filtered_data).mark_line(point=True).encode(
     x=alt.X('Year:O', title='Rok'),
-    y=alt.Y('Wartość:Q', title='Populacja'),
+    y=alt.Y('Wartość:Q', title='Populacja', axis=alt.Axis(format=',.0f')),
     color=alt.Color('Continent_Gender:N', title='Kontynent i Płeć'),
-    tooltip=['Continent', 'Gender', 'Year', 'Wartość']
+    tooltip=[
+        'Continent', 
+        'Gender', 
+        'Year', 
+        alt.Tooltip('Wartość:Q', title='Populacja', format=',.0f')  # Formatowanie liczb w tooltipie
+    ]
 ).properties(
     width=800,
     height=500,
@@ -95,26 +101,27 @@ if not filtered_data.empty:
 st.subheader(f"Top 15 krajów dla wybranych kontynentów: {', '.join(selected_continents)}")
 
 # Filtrowanie danych dla wybranego okresu i kontynentów
-top_countries_data = prepare_data()
 top_countries_data = prepared_data[(prepared_data['Continent'].isin(selected_continents)) & 
                                    (prepared_data['Year'] >= selected_year_range[0]) & 
                                    (prepared_data['Year'] <= selected_year_range[1])]
-top_countries_data.to_csv('top_countries_data.csv')
 
 # Filtrowanie według wybranej płci
 if selected_gender != 'Wszystkie':
     top_countries_data = top_countries_data[top_countries_data['Gender'] == selected_gender]
-    top_countries_data.to_csv('top_countries_data.csv')
+
 # Obliczenie średniej populacji dla każdego kraju w wybranym okresie
 top_countries_data = top_countries_data.groupby(['Country Name', 'Year'])['Wartość'].sum().reset_index()
 top_countries_data = top_countries_data.groupby('Country Name')['Wartość'].mean().reset_index()
 top_countries_data = top_countries_data.sort_values(by='Wartość', ascending=False).head(15)
 
-# Wykres słupkowy
+# Formatowanie liczb dla wykresu słupkowego
 bar_chart = alt.Chart(top_countries_data).mark_bar().encode(
     x=alt.X('Wartość:Q', title='Średnia populacja', axis=alt.Axis(format=',.0f')),
     y=alt.Y('Country Name:N', sort='-x', title='Kraj'),
-    tooltip=['Country Name', 'Wartość']
+    tooltip=[
+        'Country Name', 
+        alt.Tooltip('Wartość:Q', title='Populacja', format=',.0f')  # Formatowanie liczb w tooltipie
+    ]
 ).properties(
     width=800,
     height=500,
@@ -123,4 +130,3 @@ bar_chart = alt.Chart(top_countries_data).mark_bar().encode(
 
 if not top_countries_data.empty:
     st.altair_chart(bar_chart)
-
