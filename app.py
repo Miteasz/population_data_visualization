@@ -33,7 +33,7 @@ def prepare_data():
     if 'Country Name' in death_rate.columns:
         death_rate.rename(columns={'Country Name': 'Country'}, inplace=True)
 
-    death_rate['Year'] = death_rate['Atrybut']  # Zakładamy, że 'Atrybut' zawiera rok
+    death_rate['Year'] = death_rate['Atrybut']
     birth_rate['Year'] = birth_rate['Atrybut']
 
     population_female['Year'] = population_female['Atrybut']
@@ -84,7 +84,7 @@ selected_year_range = st.slider(
     min_value=min_year, 
     max_value=max_year, 
     value=(2000, max_year), 
-    key="global_year_slider"  # Unikalny klucz dla suwaka
+    key="global_year_slider"
 )
 
 # Filtrowanie danych po zakresie lat i płci
@@ -98,7 +98,6 @@ if selected_gender != 'Wszystkie':
 # Grupowanie danych
 continent_year_data = filtered_data.groupby(['Continent', 'Year', 'Gender', 'Continent_Gender'])['Wartość'].sum().reset_index()
 
-# Interaktywna wizualizacja za pomocą Altair
 selected_continents = st.multiselect(
     "Wybierz kontynenty, aby zobaczyć szczegóły", 
     options=list(continent_year_data['Continent'].unique()), 
@@ -243,7 +242,7 @@ def create_comparison_map(geo_data):
     # Definiowanie funkcji stylu dla mapy
     def style_function(feature):
         comparison = feature['properties'].get('Comparison', None)
-        if comparison is None or pd.isna(comparison):  # Sprawdzenie na brak danych
+        if comparison is None or pd.isna(comparison): 
             return {'fillColor': 'white', 'color': 'black', 'fillOpacity': 0.6, 'weight': 0.5}
         elif comparison:
             return {'fillColor': 'green', 'color': 'green', 'fillOpacity': 0.6, 'weight': 0.5}
@@ -266,6 +265,8 @@ def create_comparison_map(geo_data):
 
 # Tworzenie mapy porównawczej
 st.subheader("Mapa geoprzestrzenna: Kraje z większą liczbą urodzeń niż zgonów")
+st.subheader("Czerwony: Death Rate > Birth Rate")
+st.subheader("Zielony: Death Rate < Birth Rate")
 comparison_map = create_comparison_map(comparison_geo_data)
 
 # Wyświetlenie mapy w Streamlit
