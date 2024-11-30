@@ -4,3 +4,6 @@ matplotlib
 seaborn
 streamlit
 openpyxl
+geopandas
+folium
+requests
