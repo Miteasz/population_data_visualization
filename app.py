@@ -4,9 +4,7 @@ import requests
 import pandas as pd
 import streamlit as st
 import altair as alt
-import seaborn as sns
 import geopandas as gpd
-import matplotlib.pyplot as plt
 
 # Wczytanie danych
 countries_and_continents_path = 'countries_and_continents.csv'
@@ -69,9 +67,7 @@ def prepare_data():
 
     return combined_data
 
-
 prepared_data = prepare_data()
-# prepared_data.to_csv("prepared_data.csv")
 
 # Wizualizacje
 st.title("Wizualizacja danych demograficznych")
@@ -79,14 +75,28 @@ st.title("Wizualizacja danych demograficznych")
 # Wybór płci
 selected_gender = st.selectbox("Wybierz płeć", options=['Wszystkie', 'Female', 'Male'], index=0)
 
-# Filtrowanie danych
-if selected_gender == 'Wszystkie':
-    gender_filtered_data = prepared_data
-else:
-    gender_filtered_data = prepared_data[prepared_data['Gender'] == selected_gender]
+# Suwak do dynamicznej filtracji lat
+st.subheader("Filtrowanie zakresu lat dla wszystkich wizualizacji")
+min_year = int(prepared_data['Year'].min())
+max_year = int(prepared_data['Year'].max())
+selected_year_range = st.slider(
+    "Wybierz zakres lat", 
+    min_value=min_year, 
+    max_value=max_year, 
+    value=(2000, max_year), 
+    key="global_year_slider"  # Unikalny klucz dla suwaka
+)
+
+# Filtrowanie danych po zakresie lat i płci
+filtered_data = prepared_data[
+    (prepared_data['Year'] >= selected_year_range[0]) & 
+    (prepared_data['Year'] <= selected_year_range[1])
+]
+if selected_gender != 'Wszystkie':
+    filtered_data = filtered_data[filtered_data['Gender'] == selected_gender]
 
 # Grupowanie danych
-continent_year_data = gender_filtered_data.groupby(['Continent', 'Year', 'Gender', 'Continent_Gender'])['Wartość'].sum().reset_index()
+continent_year_data = filtered_data.groupby(['Continent', 'Year', 'Gender', 'Continent_Gender'])['Wartość'].sum().reset_index()
 
 # Interaktywna wizualizacja za pomocą Altair
 selected_continents = st.multiselect(
@@ -95,18 +105,11 @@ selected_continents = st.multiselect(
     default=['Europe']  # Ustawienie domyślnego wyboru na Europę
 )
 
-# Suwak do dynamicznej filtracji lat
-min_year = int(continent_year_data['Year'].min())
-max_year = int(continent_year_data['Year'].max())
-selected_year_range = st.slider("Wybierz zakres lat", min_value=min_year, max_value=max_year, value=(2000, max_year))
+# Filtrowanie danych po kontynencie
+continent_year_data = continent_year_data[continent_year_data['Continent'].isin(selected_continents)]
 
-# Filtrowanie danych po kontynencie i zakresie lat
-filtered_data = continent_year_data[(continent_year_data['Continent'].isin(selected_continents)) & 
-                                    (continent_year_data['Year'] >= selected_year_range[0]) & 
-                                    (continent_year_data['Year'] <= selected_year_range[1])]
-
-# Tworzenie wykresu liniowego z kolorami dla kontynentu i płci
-line_chart = alt.Chart(filtered_data).mark_line(point=True).encode(
+# Tworzenie wykresu liniowego
+line_chart = alt.Chart(continent_year_data).mark_line(point=True).encode(
     x=alt.X('Year:O', title='Rok'),
     y=alt.Y('Wartość:Q', title='Populacja', axis=alt.Axis(format=',.0f')),
     color=alt.Color('Continent_Gender:N', title='Kontynent i Płeć'),
@@ -114,7 +117,7 @@ line_chart = alt.Chart(filtered_data).mark_line(point=True).encode(
         'Continent', 
         'Gender', 
         'Year', 
-        alt.Tooltip('Wartość:Q', title='Populacja', format=',.0f')  # Formatowanie liczb w tooltipie
+        alt.Tooltip('Wartość:Q', title='Populacja', format=',.0f')
     ]
 ).properties(
     width=800,
@@ -122,113 +125,148 @@ line_chart = alt.Chart(filtered_data).mark_line(point=True).encode(
     title=f'Populacja wybranych kontynentów w poszczególnych latach - {selected_gender}'
 ).interactive()
 
-if not filtered_data.empty:
+if not continent_year_data.empty:
     st.altair_chart(line_chart)
 
-# Wykres słupkowy dla top 15 krajów
-st.subheader(f"Top 15 krajów dla wybranych kontynentów: {', '.join(selected_continents)}")
-
-# Filtrowanie danych dla wybranego okresu i kontynentów
-top_countries_data = prepared_data[(prepared_data['Continent'].isin(selected_continents)) & 
-                                   (prepared_data['Year'] >= selected_year_range[0]) & 
-                                   (prepared_data['Year'] <= selected_year_range[1])]
-
-# Filtrowanie według wybranej płci
-if selected_gender != 'Wszystkie':
-    top_countries_data = top_countries_data[top_countries_data['Gender'] == selected_gender]
-
-# Obliczenie średniej populacji dla każdego kraju w wybranym okresie
-top_countries_data = top_countries_data.groupby(['Country Name', 'Year'])['Wartość'].sum().reset_index()
-top_countries_data = top_countries_data.groupby('Country Name')['Wartość'].mean().reset_index()
-top_countries_data = top_countries_data.sort_values(by='Wartość', ascending=False).head(15)
-
-# Formatowanie liczb dla wykresu słupkowego
-bar_chart = alt.Chart(top_countries_data).mark_bar().encode(
-    x=alt.X('Wartość:Q', title='Średnia populacja', axis=alt.Axis(format=',.0f')),
-    y=alt.Y('Country Name:N', sort='-x', title='Kraj'),
-    tooltip=[
-        'Country Name', 
-        alt.Tooltip('Wartość:Q', title='Populacja', format=',.0f')  # Formatowanie liczb w tooltipie
-    ]
-).properties(
-    width=800,
-    height=500,
-    title=f'Top 15 krajów w wybranych kontynentach: {", ".join(selected_continents)} (średnia populacja) - {selected_gender}'
-)
-
-if not top_countries_data.empty:
-    st.altair_chart(bar_chart)
-
-#############
-
-# Przygotowanie danych geoprzestrzennych
+# Przygotowanie map geoprzestrzennych
 def prepare_geospatial_data(data):
-    # Wczytanie pliku GeoJSON z internetu
     geojson_path = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json'
     geojson_data = requests.get(geojson_path).json()
-
-    # Przekształcenie GeoJSON na GeoDataFrame
     geo_gdf = gpd.GeoDataFrame.from_features(geojson_data["features"])
-
-    # Ustawienie CRS (układu współrzędnych)
     geo_gdf.set_crs(epsg=4326, inplace=True)
 
-    # Grupowanie danych dla wskaźnika na poziomie krajowym
-    map_data = data.groupby('Country')['Death Rate'].mean().reset_index()
+    # Grupowanie danych dla wskaźników na poziomie krajowym
+    map_data = data.groupby('Country')[['Death Rate', 'Birth Rate']].mean().reset_index()
 
-    # Dopasowanie nazw krajów (dodaj więcej mapowań w razie potrzeby)
+    # Dopasowanie nazw krajów
     country_name_mapping = {
         "United States": "United States of America",
         "Serbia": "Republic of Serbia",
         "Tanzania": "United Republic of Tanzania",
-        "Democratic Republic of the Congo": "Republic of the Congo"
+        "Czechia": "Czech Republic",
+        "Democratic Republic of the Congo": "Democratic Republic of the Congo"
+    }
+    map_data['Country'] = map_data['Country'].replace(country_name_mapping)
+
+    # Łączenie danych GeoJSON z danymi wskaźników
+    geo_gdf = geo_gdf.merge(map_data, left_on='name', right_on='Country', how='left')
+    geo_gdf['Death Rate'] = geo_gdf['Death Rate'].fillna(0)
+    geo_gdf['Birth Rate'] = geo_gdf['Birth Rate'].fillna(0)
+
+    return geo_gdf
+
+geo_data = prepare_geospatial_data(filtered_data)
+
+# Mapa dla Death Rate
+st.subheader("Mapa geoprzestrzenna: Śmiertelność na poziomie krajowym")
+death_rate_map = folium.Map(location=[20, 0], zoom_start=2)
+folium.Choropleth(
+    geo_data=geo_data.to_json(),
+    data=geo_data,
+    columns=['name', 'Death Rate'],
+    key_on='feature.properties.name',
+    fill_color='YlGnBu',
+    fill_opacity=0.7,
+    line_opacity=0.2,
+    legend_name='Death Rate'
+).add_to(death_rate_map)
+folium.GeoJson(
+    geo_data,
+    tooltip=folium.GeoJsonTooltip(
+        fields=['name', 'Death Rate'],
+        aliases=['Country', 'Death Rate'],
+        localize=True
+    )
+).add_to(death_rate_map)
+st.components.v1.html(death_rate_map._repr_html_(), width=800, height=600)
+
+# Mapa dla Birth Rate
+st.subheader("Mapa geoprzestrzenna: Liczba urodzeń na poziomie krajowym")
+birth_rate_map = folium.Map(location=[20, 0], zoom_start=2)
+folium.Choropleth(
+    geo_data=geo_data.to_json(),
+    data=geo_data,
+    columns=['name', 'Birth Rate'],
+    key_on='feature.properties.name',
+    fill_color='YlGn',
+    fill_opacity=0.7,
+    line_opacity=0.2,
+    legend_name='Birth Rate'
+).add_to(birth_rate_map)
+folium.GeoJson(
+    geo_data,
+    tooltip=folium.GeoJsonTooltip(
+        fields=['name', 'Birth Rate'],
+        aliases=['Country', 'Birth Rate'],
+        localize=True
+    )
+).add_to(birth_rate_map)
+st.components.v1.html(birth_rate_map._repr_html_(), width=800, height=600)
+
+# Przygotowanie danych dla mapy porównawczej
+def prepare_comparison_map_data(data, year_range):
+    # Filtrowanie danych na podstawie zakresu lat
+    filtered_data = data[(data['Year'] >= year_range[0]) & (data['Year'] <= year_range[1])]
+
+    geojson_path = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json'
+    geojson_data = requests.get(geojson_path).json()
+    geo_gdf = gpd.GeoDataFrame.from_features(geojson_data["features"])
+    geo_gdf.set_crs(epsg=4326, inplace=True)
+
+    # Grupowanie danych dla wskaźników na poziomie krajowym
+    map_data = filtered_data.groupby('Country')[['Death Rate', 'Birth Rate']].mean().reset_index()
+
+    # Dopasowanie nazw krajów
+    country_name_mapping = {
+        "United States": "United States of America",
+        "Serbia": "Republic of Serbia",
+        "Tanzania": "United Republic of Tanzania",
+        "Czechia": "Czech Republic",
+        "Democratic Republic of the Congo": "Democratic Republic of the Congo"
     }
     map_data['Country'] = map_data['Country'].replace(country_name_mapping)
 
     # Łączenie danych GeoJSON z danymi wskaźników
     geo_gdf = geo_gdf.merge(map_data, left_on='name', right_on='Country', how='left')
 
-    # Wypełnianie brakujących wartości wskaźnika (opcjonalnie)
-    geo_gdf['Death Rate'] = geo_gdf['Death Rate'].fillna(0)  # Wartość domyślna dla brakujących danych
+    # Tworzenie kolumny dla porównania: Birth Rate > Death Rate
+    geo_gdf['Comparison'] = geo_gdf['Birth Rate'] > geo_gdf['Death Rate']
 
     return geo_gdf
 
-# Przygotowanie danych do mapy
-geo_data = prepare_geospatial_data(prepared_data)
-# geo_data.to_csv("geo_data.csv")
-# Tworzenie mapy z folium
-def create_map(geo_data):
-    # Tworzenie mapy
+comparison_geo_data = prepare_comparison_map_data(prepared_data, selected_year_range)
+
+# Funkcja do tworzenia mapy porównawczej
+def create_comparison_map(geo_data):
     m = folium.Map(location=[20, 0], zoom_start=2)
 
-    # Dodanie warstwy Choropleth
-    folium.Choropleth(
-        geo_data=geo_data.to_json(),
-        data=geo_data,
-        columns=['name', 'Death Rate'],
-        key_on='feature.properties.name',
-        fill_color='YlGnBu',
-        fill_opacity=0.7,
-        line_opacity=0.2,
-        legend_name='Death Rate'
-    ).add_to(m)
+    # Definiowanie funkcji stylu dla mapy
+    def style_function(feature):
+        comparison = feature['properties'].get('Comparison', None)
+        if comparison is None or pd.isna(comparison):  # Sprawdzenie na brak danych
+            return {'fillColor': 'white', 'color': 'black', 'fillOpacity': 0.6, 'weight': 0.5}
+        elif comparison:
+            return {'fillColor': 'green', 'color': 'green', 'fillOpacity': 0.6, 'weight': 0.5}
+        else:
+            return {'fillColor': 'red', 'color': 'red', 'fillOpacity': 0.6, 'weight': 0.5}
 
-    # Dodanie tooltipów z informacjami o krajach
+    # Dodanie warstwy GeoJson
     folium.GeoJson(
         geo_data,
+        style_function=style_function,
         tooltip=folium.GeoJsonTooltip(
-            fields=['name', 'Death Rate'],
-            aliases=['Country', 'Death Rate'],
+            fields=['name', 'Birth Rate', 'Death Rate'],
+            aliases=['Country', 'Birth Rate', 'Death Rate'],
             localize=True
         )
     ).add_to(m)
 
     return m
 
-# Tworzenie mapy
-st.subheader("Mapa geoprzestrzenna: Śmiertelność na poziomie krajowym")
-map_object = create_map(geo_data)
+
+# Tworzenie mapy porównawczej
+st.subheader("Mapa geoprzestrzenna: Kraje z większą liczbą urodzeń niż zgonów")
+comparison_map = create_comparison_map(comparison_geo_data)
 
 # Wyświetlenie mapy w Streamlit
-st.components.v1.html(map_object._repr_html_(), width=800, height=600)
-
+st.components.v1.html(comparison_map._repr_html_(), width=800, height=600)
