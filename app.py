@@ -157,7 +157,8 @@ def prepare_geospatial_data(data):
 geo_data = prepare_geospatial_data(filtered_data)
 
 # Mapa dla Death Rate
-st.subheader("Mapa geoprzestrzenna: Śmiertelność na poziomie krajowym")
+st.subheader("Mapa geoprzestrzenna: Śmiertelność na poziomie krajowym (Na 1000 mieszkańców)")
+st.subheader(f"(Lata: {selected_year_range[0]} - {selected_year_range[1]})")
 death_rate_map = folium.Map(location=[20, 0], zoom_start=2)
 folium.Choropleth(
     geo_data=geo_data.to_json(),
@@ -180,7 +181,8 @@ folium.GeoJson(
 st.components.v1.html(death_rate_map._repr_html_(), width=800, height=600)
 
 # Mapa dla Birth Rate
-st.subheader("Mapa geoprzestrzenna: Liczba urodzeń na poziomie krajowym")
+st.subheader("Mapa geoprzestrzenna: Liczba urodzeń na poziomie krajowym (Na 1000 mieszkańców)")
+st.subheader(f"(Lata: {selected_year_range[0]} - {selected_year_range[1]})")
 birth_rate_map = folium.Map(location=[20, 0], zoom_start=2)
 folium.Choropleth(
     geo_data=geo_data.to_json(),
@@ -265,6 +267,7 @@ def create_comparison_map(geo_data):
 
 # Tworzenie mapy porównawczej
 st.subheader("Mapa geoprzestrzenna: Kraje z większą liczbą urodzeń niż zgonów")
+st.subheader(f"(Lata: {selected_year_range[0]} - {selected_year_range[1]})")
 st.subheader("Czerwony: Death Rate > Birth Rate")
 st.subheader("Zielony: Death Rate < Birth Rate")
 comparison_map = create_comparison_map(comparison_geo_data)
