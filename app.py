@@ -121,7 +121,7 @@ line_chart = alt.Chart(continent_year_data).mark_line(point=True).encode(
 ).properties(
     width=800,
     height=500,
-    title=f'Populacja wybranych kontynentów w poszczególnych latach - {selected_gender}'
+    title=f'Populacja wybranych kontynentów w wybranych latach {selected_year_range[0]} - {selected_year_range[1]} według płci - {selected_gender}'
 ).interactive()
 
 if not continent_year_data.empty:
@@ -157,8 +157,9 @@ def prepare_geospatial_data(data):
 geo_data = prepare_geospatial_data(filtered_data)
 
 # Mapa dla Death Rate
-st.subheader("Mapa geoprzestrzenna: Śmiertelność na poziomie krajowym (Na 1000 mieszkańców)")
-st.subheader(f"(Lata: {selected_year_range[0]} - {selected_year_range[1]})")
+st.subheader("Mapa geoprzestrzenna: Śmiertelność na poziomie krajowym")
+st.markdown(f"(Wybrane w filtrze lata: {selected_year_range[0]} - {selected_year_range[1]})")
+st.markdown(f"Po najechaniu kursorem na kraj wyświetli się liczba zgonów przypadająca na tysiąc mieszkańców.")
 death_rate_map = folium.Map(location=[20, 0], zoom_start=2)
 folium.Choropleth(
     geo_data=geo_data.to_json(),
@@ -181,8 +182,9 @@ folium.GeoJson(
 st.components.v1.html(death_rate_map._repr_html_(), width=800, height=600)
 
 # Mapa dla Birth Rate
-st.subheader("Mapa geoprzestrzenna: Liczba urodzeń na poziomie krajowym (Na 1000 mieszkańców)")
-st.subheader(f"(Lata: {selected_year_range[0]} - {selected_year_range[1]})")
+st.subheader("Mapa geoprzestrzenna: Liczba urodzeń na poziomie krajowym")
+st.markdown(f"(Wybrane w filtrze lata: {selected_year_range[0]} - {selected_year_range[1]})")
+st.markdown(f"Po najechaniu kursorem na kraj wyświetli się liczba urodzeń przypadająca na tysiąc mieszkańców.")
 birth_rate_map = folium.Map(location=[20, 0], zoom_start=2)
 folium.Choropleth(
     geo_data=geo_data.to_json(),
@@ -267,9 +269,10 @@ def create_comparison_map(geo_data):
 
 # Tworzenie mapy porównawczej
 st.subheader("Mapa geoprzestrzenna: Kraje z większą liczbą urodzeń niż zgonów")
-st.subheader(f"(Lata: {selected_year_range[0]} - {selected_year_range[1]})")
-st.subheader("Czerwony: Death Rate > Birth Rate")
-st.subheader("Zielony: Death Rate < Birth Rate")
+st.markdown(f"(Wybrane w filtrze lata: {selected_year_range[0]} - {selected_year_range[1]})")
+st.markdown(f"Po najechaniu kursorem na kraj wyświetli się liczba zgonów i urodzeń przypadająca na tysiąc mieszkańców.")
+st.markdown("Czerwony: Death Rate > Birth Rate")
+st.markdown("Zielony: Death Rate < Birth Rate")
 comparison_map = create_comparison_map(comparison_geo_data)
 
 # Wyświetlenie mapy w Streamlit
